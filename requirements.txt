@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-jose[cryptography]
+# passlib[bcrypt]
+passlib[argon2]
+python-multipart
+sqlalchemy
+psycopg2-binary
+pydantic[email]
+mcp
+httpx
+passlib
+alembic
