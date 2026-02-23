@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from auth.models import User
 from database import engine, Base
+import os
 
 from auth.router import router as auth_router, chat_router as ai_router
 
@@ -20,18 +21,14 @@ except Exception as e:
     print(f"ERROR loading config: {e}", flush=True)
     raise
 
+# Parse allowed origins from environment variable
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",")]
+
 # CORS middleware - must be added FIRST (before routers)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://192.168.29.46:5173",
-        "http://192.168.29.46:8000",
-        "https://todo-smoky-alpha.vercel.app",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
