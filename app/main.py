@@ -30,6 +30,7 @@ app.add_middleware(
         "http://127.0.0.1:8000",
         "http://192.168.29.46:5173",
         "http://192.168.29.46:8000",
+        "https://todo-smoky-alpha.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
