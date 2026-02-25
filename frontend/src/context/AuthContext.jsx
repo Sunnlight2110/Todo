@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import apiClient from '../api/client';
+import { clearSessionUUID } from '../utils/sessionUUID';
 
 export const AuthContext = createContext(null);
 
@@ -135,6 +136,7 @@ export function AuthProvider({ children }) {
   const register = useCallback(async (username, email, password) => {
     try {
       setError(null);
+      clearSessionUUID(); // Clear old session UUID before new login
       const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         username,
         email,
@@ -184,6 +186,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (username, password) => {
     try {
       setError(null);
+      clearSessionUUID(); // Clear old session UUID before new login
       const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         username,
         password,
@@ -221,6 +224,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setError(null);
     setUserProfileLoaded(false);
+    clearSessionUUID(); // Clear session UUID on logout
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
     localStorage.removeItem('refreshToken');
