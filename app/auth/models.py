@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, TEXT, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, TEXT, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -27,10 +27,11 @@ class TODO(Base):
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
+    __table_args__ = (UniqueConstraint('user_id', 'session_uuid', name='uq_user_session'), )
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    session_uuid = Column(String, unique=True, index=True)  # ← Make it unique!
+    session_uuid = Column(String, index=True)  # Per-user unique via composite constraint
     created_at = Column(DateTime, default=datetime.now)
     
     # Relationships
