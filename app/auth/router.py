@@ -12,6 +12,8 @@ from typing import List
 from datetime import datetime
 import httpx
 import os
+import asyncio
+import time
 from config import settings
 
 from mcp_config.server_setup import handle_tool_call
@@ -292,6 +294,32 @@ async def chat_with_agent(
         db.add(user_message)
         db.commit()
         
+        # Helper function to call OpenRouter API with retry logic
+        async def call_openrouter_with_retry(client, payload, max_retries=2):
+            for attempt in range(max_retries + 1):
+                try:
+                    print(f'OpenRouter API attempt {attempt + 1}/{max_retries + 1}')
+                    response = await client.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {settings.open_router_key}"},
+                        json=payload,
+                        timeout=180.0  # 3 minutes timeout for AI model inference
+                    )
+                    return response
+                except httpx.TimeoutException as e:
+                    if attempt < max_retries:
+                        wait_time = (attempt + 1) * 5
+                        print(f'Timeout on attempt {attempt + 1}, retrying in {wait_time}s...')
+                        await asyncio.sleep(wait_time)
+                    else:
+                        print(f'All {max_retries + 1} attempts failed with timeout')
+                        raise
+                except Exception as e:
+                    print(f'Error on attempt {attempt + 1}: {str(e)}')
+                    if attempt < max_retries:
+                        await asyncio.sleep(2)
+                    else:
+                        raise
         
         async with httpx.AsyncClient() as client:
             # 🔄 The Agent Loop
@@ -300,20 +328,30 @@ async def chat_with_agent(
             
             for turn in range(max_turns):
                 print(f'turn:{turn}')
-                response = await client.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {settings.open_router_key}"},
-                    json={
-                        "model": "google/gemini-2.0-flash-001",
+                try:
+                    payload = {
+                        "model": "google/gemma-4-31b-it:free",
                         "messages": messages,
                         "tools": AI_TOOLS
                     }
-                )
+                    response = await call_openrouter_with_retry(client, payload)
+                except httpx.TimeoutException:
+                    print(f'AI service timeout on turn {turn} after all retries')
+                    return {"answer": "The AI service took too long to respond. Please try again in a moment.", "session_uuid": session_uuid}
+                except Exception as e:
+                    print(f'API error on turn {turn}: {type(e).__name__}: {str(e)}')
+                    return {"answer": f"Error communicating with AI service. Please try again.", "session_uuid": session_uuid}
                 
-                result = response.json()
+                try:
+                    result = response.json()
+                except Exception as e:
+                    print(f'Failed to parse API response on turn {turn}: {e}')
+                    return {"answer": "Invalid response from AI service. Please try again.", "session_uuid": session_uuid}
                 
                 if 'choices' not in result:
-                    return {"answer": f"API Error: {result.get('error', 'Unknown error')}"}
+                    error_msg = result.get('error', {}).get('message', 'Unknown error')
+                    print(f'API returned error: {error_msg}')
+                    return {"answer": f"AI service error: {error_msg}", "session_uuid": session_uuid}
                     
                 ai_message = result['choices'][0]['message']
                 messages.append(ai_message)
