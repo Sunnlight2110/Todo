@@ -316,7 +316,14 @@ async def chat_with_agent(
                     return {"answer": f"API Error: {result.get('error', 'Unknown error')}"}
                     
                 ai_message = result['choices'][0]['message']
-                messages.append(ai_message)
+                clean_message = {
+                    "role": "assistant",
+                    "content": ai_message.get("content") or ""
+                }
+                if ai_message.get("tool_calls"):
+                    clean_message["tool_calls"] = ai_message["tool_calls"]
+
+                messages.append(clean_message)
 
                 if not ai_message.get('tool_calls'):
                     break
