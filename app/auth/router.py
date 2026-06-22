@@ -354,11 +354,20 @@ async def chat_with_agent(
                     return {"answer": f"AI service error: {error_msg}", "session_uuid": session_uuid}
                     
                 ai_message = result['choices'][0]['message']
-                messages.append(ai_message)
+
+                # Rebuild clean — OpenRouter/Gemini rejects content:null + extra
+                # fields (reasoning, refusal, annotations) echoed back as history
+                clean_message = {
+                    "role": "assistant",
+                    "content": ai_message.get("content") or ""
+                }
+                if ai_message.get("tool_calls"):
+                    clean_message["tool_calls"] = ai_message["tool_calls"]
+
+                messages.append(clean_message)
 
                 if not ai_message.get('tool_calls'):
                     break
-                
                 print(f'turn: {turn}')
 
                 # 🏃 EXECUTE TOOLS
