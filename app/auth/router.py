@@ -330,7 +330,7 @@ async def chat_with_agent(
                 print(f'turn:{turn}')
                 try:
                     payload = {
-                        "model": "google/gemma-4-31b-it:free",
+                        "model": "openrouter/free",
                         "messages": messages,
                         "tools": AI_TOOLS
                     }

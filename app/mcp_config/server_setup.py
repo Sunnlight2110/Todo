@@ -12,7 +12,7 @@ from sqlalchemy import func
 
 
 OPEN_ROUTER_KEY = settings.open_router_key
-MODEL_ID = "google/gemma-4-31b-it:free"
+MODEL_ID = "openrouter/free"
 
 server = Server('todo_mcp_server')
 
